@@ -18,20 +18,32 @@ elsif ($ufw_check =~ /.*active.*/i) {
    
    # if an IP has more than $max_connections amount of connections to the server
    my $max_connections = 1;
-   # more than $max_offences times
+   # more than $max_offences times (number of times caught by the script)
    my $max_offences = 5;
    # within $offender_timeout seconds
-   my $offender_timeout = 10;
+   my $offender_timeout = 30;
    # it gets banned.
    
-   # debug mode
+   # debug modem, change this to ban IPs for real
    my $debug_only = 1;
-   # offenders tracking file
+   # offenders tracking output file
    my $offence_tracker_file = "offenders.ddos";
+   # offenders tracking output file
+   my $whitelist_file = "whitelist.ddos";
 
    my %ips;
    my %offending_ips;
+   my %whitelist_ips;
    my $now = time();
+   
+   # read in the whitelist
+   if (open (my $fhr, "<", "$whitelist_file")) {
+      while (my $line = <$fhr>) {
+         if ($line =~ /([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)/) {
+            $whitelist_ips{$1} = 1;
+         }
+      }
+   }
    
    # read in the previously logged ips that went over the threshold
    if (open (my $fhr, "<", "$offence_tracker_file")) {
@@ -61,6 +73,11 @@ elsif ($ufw_check =~ /.*active.*/i) {
    while ((my $ip, my $connections) = each(%ips)) {
       # if an IP is over the limit
       if ($connections > $max_connections) {
+      
+         # skip if in whitelist
+         if ($whitelist_ips{$ip}) {
+            next;
+         }
       
          # how many times has this IP offended?
          if (!$offending_ips{$ip}) {
