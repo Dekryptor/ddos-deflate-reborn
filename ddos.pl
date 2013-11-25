@@ -14,6 +14,8 @@ my $max_offences = 5;
 my $offender_timeout = 30;
 # it gets banned.
 
+# use UFW (Uncomplicated Firewall) to block IPs. if set to 0, iptables will be used
+my $use_ufw = 1;
 # debug mode: change this to 0 to ban IPs for real
 my $debug_only = 1;
 # whitelist file. add one IP per line.
@@ -23,17 +25,23 @@ my $offence_tracker_file = "offenders.ddos";
 
 ### end config, below be dragons ###
 
-my $ufw_check = qx(ufw status 2>&1);
+my $fw_check;
 
-if ($ufw_check =~ /.*error.*/i) {
-   print "This script must have UFW permissions (usually this means it needs to run as root)" . "\n";
+if ($use_ufw) {
+   $fw_check = qx(ufw status 2>&1);
+} else {
+   $fw_check = qx(iptables --check 1 2>&1);
 }
 
-elsif ($ufw_check =~ /.*inactive.*/i) {
+if ($fw_check =~ /.*error.*/i or $fw_check =~ /.*denied.*/i) {
+   print "This script must have ufw/iptables permissions (usually this means it needs to run as root)" . "\n";
+}
+
+elsif ($fw_check =~ /.*inactive.*/i) {
    print "UFW is inactive. It must be activated. Don't enable a firewall unless you know what you're doing! Try: sudo ufw enable" . "\n";
 }
 
-elsif ($ufw_check =~ /.*active.*/i) {
+elsif ($fw_check =~ /.*active.*/i or $fw_check =~ /.*chain.*/i) {
 
    my %ips;
    my %offending_ips;
@@ -107,20 +115,47 @@ elsif ($ufw_check =~ /.*active.*/i) {
          if ($num_offences > $max_offences) {
             print "Banning: " . $ip . " .. ";
  
-            my $ufw_ret;
-            if ($debug_only) {
-               $ufw_ret = qx(ufw --dry-run insert 1 deny from $ip);
-            }
-            else {
-               $ufw_ret = qx(ufw insert 1 deny from $ip);
+            my $fw_cmd;
+            my $fw_ret;
+            
+            # use UFW (Uncomplicated Firewall)
+            if ($use_ufw) {
+            
+               $fw_cmd = "ufw ".($debug_only ? "--dry-run" : "")." insert 1 deny from $ip 2>&1";
+            
+               $fw_ret = qx($fw_cmd);
+
+               if ($fw_ret =~ /invalid position/i) {
+                  $fw_cmd = "ufw ".($debug_only ? "--dry-run" : "")." deny from $ip 2>&1";
+                  $fw_ret = qx($fw_cmd);
+               }
+               
+               if ($fw_ret =~ /rule inserted/i or $fw_ret =~ /rules updated/i) {
+                  print "success" . ($debug_only ? " (dry-run, no rule actually added)" : ".") . "\n";
+               } else {
+                  print "failure: " . $fw_ret . "\n";
+               }
             }
             
-            if ($ufw_ret eq "Rule inserted") {
-               print "success." . "\n";
-            } else {
-               print "failure: " . $ufw_ret . "\n";
+            #use IPtables
+            else {
+               if ($debug_only) {
+                  print "(dry-run, no rule actually added)" . "\n";
+               }
+               else {
+                  $fw_ret = qx(iptables -A INPUT -s $ip -j DROP 2>&1);
+               }
+               
+               if (chomp($fw_ret) eq "") {
+                  print "success.";
+                  qx(service iptables save);
+               }
+               else {
+                  print "failure: " . $fw_ret . "\n";
+               }
             }
          }
+         
          # if not over offending threshold
          else {
             # write ip to offenders file
