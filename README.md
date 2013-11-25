@@ -16,6 +16,7 @@ Uses UFW (Uncomplicated Firewall) or iptables to ban IPs which maintain a large 
 - Edit the configuration variables in the script.
 - Edit the whitelist in "whitelist.ddos".
 - Create a cronjob to run the script every x seconds. The script should run more often than the $offender_timeout config variable, or no IPs will ever be banned.
+ - Example: run script once every minute: * * * * * perl /path/to/script/ddos.pl
 
 ### License
 
