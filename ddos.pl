@@ -83,16 +83,28 @@ elsif ($ufw_check =~ /.*active.*/i) {
             next;
          }
       
-         # how many times has this IP offended?
+         my $num_offences;
+         my $last_offence_time;
+      
+         # ip was not on offenders list
          if (!$offending_ips{$ip}) {
-            $offending_ips{$ip} = 0 . " " . $now;
+            $num_offences = 1;
+            $last_offence_time = $now;
+         }
+         # ip has offended before
+         else {
+            ($num_offences, $last_offence_time) = split (/\s/, $offending_ips{$ip});
+            
+            # skip this ip if it has timed out.
+            if ($now - $last_offence_time > $offender_timeout) {
+               next;
+            }
+            
+            $num_offences++;
          }
          
-         (my $num, my $time) = split (/\s/, $offending_ips{$ip});
-         $num++;
-         
          # ban the ip if it's offended too many times
-         if ($num > $max_offences) {
+         if ($num_offences > $max_offences) {
             print "Banning: " . $ip . " .. ";
  
             my $ufw_ret;
@@ -109,12 +121,10 @@ elsif ($ufw_check =~ /.*active.*/i) {
                print "failure: " . $ufw_ret . "\n";
             }
          }
-         
+         # if not over offending threshold
          else {
-            # if the logged ip hasn't expired, write it to file
-            if ($now - $time < $offender_timeout) {
-               print {$fhw} $ip . " " . $num . " " . $now . "\n";
-            }
+            # write ip to offenders file
+            print {$fhw} $ip . " " . $num_offences . " " . $now . "\n";
          }
       }
    }
