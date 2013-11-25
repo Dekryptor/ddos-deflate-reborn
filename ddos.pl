@@ -96,7 +96,7 @@ elsif ($ufw_check =~ /.*active.*/i) {
                $ufw_ret = qx(ufw --dry-run insert 1 deny from $ip);
             }
             else {
-               $ufw_ret = qx(ufw --dry-run insert 1 deny from $ip);
+               $ufw_ret = qx(ufw insert 1 deny from $ip);
             }
             
             if ($ufw_ret eq "Rule inserted") {
