@@ -4,6 +4,25 @@ use strict;
 use warnings;
 use integer;
 
+### start config ###
+
+# if an IP has more than $max_connections amount of connections to the server
+my $max_connections = 1;
+# more than $max_offences times (number of times caught by the script)
+my $max_offences = 5;
+# within $offender_timeout seconds
+my $offender_timeout = 30;
+# it gets banned.
+
+# debug mode: change this to 0 to ban IPs for real
+my $debug_only = 1;
+# whitelist file. add one IP per line.
+my $whitelist_file = "whitelist.ddos";
+# offenders tracking output file
+my $offence_tracker_file = "offenders.ddos";
+
+### end config, below be dragons ###
+
 my $ufw_check = qx(ufw status 2>&1);
 
 if ($ufw_check =~ /.*error.*/i) {
@@ -15,21 +34,6 @@ elsif ($ufw_check =~ /.*inactive.*/i) {
 }
 
 elsif ($ufw_check =~ /.*active.*/i) {
-   
-   # if an IP has more than $max_connections amount of connections to the server
-   my $max_connections = 1;
-   # more than $max_offences times (number of times caught by the script)
-   my $max_offences = 5;
-   # within $offender_timeout seconds
-   my $offender_timeout = 30;
-   # it gets banned.
-   
-   # debug modem, change this to ban IPs for real
-   my $debug_only = 1;
-   # offenders tracking output file
-   my $offence_tracker_file = "offenders.ddos";
-   # offenders tracking output file
-   my $whitelist_file = "whitelist.ddos";
 
    my %ips;
    my %offending_ips;
