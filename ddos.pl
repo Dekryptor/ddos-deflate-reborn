@@ -15,8 +15,7 @@ elsif ($ufw_check =~ /.*inactive.*/i) {
 }
 
 else {
-
-   my $offence_tracker_file = "offenders.ddos";
+   
    # if an IP has more than $max_connections amount of connections
    my $max_connections = 1;
    # more than $max_intervals times 
@@ -24,6 +23,9 @@ else {
    # within $expiry_time seconds
    my $expiry_time = 10;
    # it gets banned.
+   
+   my $debug_only = 1;
+   my $offence_tracker_file = "offenders.ddos";
 
    my %ips;
    my %offending_ips;
@@ -68,7 +70,21 @@ else {
          
          # ban the ip if it's offended too many times
          if ($num > $max_intervals) {
-            print $ip . " " . $connections . "\n";
+            print "Banning: " . $ip . " .. ";
+ 
+            my $ufw_ret;
+            if ($debug_only) {
+               $ufw_ret = qx(ufw --dry-run insert 1 deny from $ip);
+            }
+            else {
+               $ufw_ret = qx(ufw --dry-run insert 1 deny from $ip);
+            }
+            
+            if ($ufw_ret eq "Rule inserted") {
+               print "success." . "\n";
+            } else {
+               print "failure: " . $ufw_ret . "\n";
+            }
          }
          
          else {
