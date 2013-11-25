@@ -3,6 +3,12 @@
 use strict;
 use warnings;
 use integer;
+use English;
+
+if ( $< != 0 ) {
+   print "This script must be run as root\n"; 
+   exit (0);
+}
 
 my $offence_tracker_file = "offenders.ddos";
 # if an IP has more than $max_connections amount of connections
