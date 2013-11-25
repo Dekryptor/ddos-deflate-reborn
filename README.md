@@ -10,7 +10,7 @@ This is a Perl rewrite of the (D)Dos Deflate script found at http://deflate.medi
 
 ### Installation
 
-- Edit the configuration variables in the script.
+- Edit the configuration variables in the script. Change the $debug_only variable to 0 to ban IPs for real.
 - Create a cronjob to run the script every x seconds.
 
 ### License

@@ -14,23 +14,25 @@ elsif ($ufw_check =~ /.*inactive.*/i) {
    print "UFW is inactive. It must be activated. Don't enable a firewall unless you know what you're doing! Try: sudo ufw enable" . "\n";
 }
 
-else {
+elsif ($ufw_check =~ /.*active.*/i) {
    
-   # if an IP has more than $max_connections amount of connections
+   # if an IP has more than $max_connections amount of connections to the server
    my $max_connections = 1;
-   # more than $max_intervals times 
-   my $max_intervals = 5;
-   # within $expiry_time seconds
-   my $expiry_time = 10;
+   # more than $max_offences times
+   my $max_offences = 5;
+   # within $offender_timeout seconds
+   my $offender_timeout = 10;
    # it gets banned.
    
+   # debug mode
    my $debug_only = 1;
+   # offenders tracking file
    my $offence_tracker_file = "offenders.ddos";
 
    my %ips;
    my %offending_ips;
    my $now = time();
-
+   
    # read in the previously logged ips that went over the threshold
    if (open (my $fhr, "<", "$offence_tracker_file")) {
       while (my $line = <$fhr>) {
@@ -50,10 +52,10 @@ else {
          $ips{$6}++;
       }
    }
-
-   # open the file for writing
+   
+   # open the tracking file for writing
    my $fhw;
-   open ($fhw, ">", "$offence_tracker_file");
+   open ($fhw, ">", "$offence_tracker_file") or die "ERROR: cannot open $offence_tracker_file for writing: $!";
 
    # go through all the active ips
    while ((my $ip, my $connections) = each(%ips)) {
@@ -69,7 +71,7 @@ else {
          $num++;
          
          # ban the ip if it's offended too many times
-         if ($num > $max_intervals) {
+         if ($num > $max_offences) {
             print "Banning: " . $ip . " .. ";
  
             my $ufw_ret;
@@ -89,7 +91,7 @@ else {
          
          else {
             # if the logged ip hasn't expired, write it to file
-            if ($now - $time < $expiry_time) {
+            if ($now - $time < $offender_timeout) {
                print {$fhw} $ip . " " . $num . " " . $now . "\n";
             }
          }
@@ -97,4 +99,8 @@ else {
    }
 
    close($fhw);
+}
+
+else {
+   print "Unknown error.";
 }
