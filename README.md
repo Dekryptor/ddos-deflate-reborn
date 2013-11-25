@@ -9,7 +9,7 @@ This is a Perl rewrite of the (D)Dos Deflate script found at http://deflate.medi
 
 ### Mode of operation
 
-Uses UFW (Uncomplicated Firewall) or iptables to ban IPs which maintain a consistently large amount of connections over a period of time.
+Uses UFW (Uncomplicated Firewall) or iptables to ban IPs which maintain a large amount of connections over a period of time.
 
 ### Installation
 
